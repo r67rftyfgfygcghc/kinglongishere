@@ -103,7 +103,7 @@ private fun updateTileSource(mapView: MapView, mapProvider: MapProvider) {
         when (mapProvider) {
             MapProvider.OSM -> TileSourceFactory.MAPNIK
 
-            MapProvider.AMAP -> XYTileSource(
+            MapProvider.AMAP -> object : XYTileSource(
                 "高德地图",
                 0, 19, 256, ".png",
                 arrayOf(
@@ -112,21 +112,31 @@ private fun updateTileSource(mapView: MapView, mapProvider: MapProvider) {
                     "https://webrd03.is.autonavi.com/appmaptile?",
                     "https://webrd04.is.autonavi.com/appmaptile?"
                 )
-            ) { zoom, x, y ->
-                "lang=zh_cn&size=1&scale=1&style=8&x=$x&y=$y&z=$zoom"
+            ) {
+                override fun getTileURLString(pMapTileIndex: Long): String {
+                    val zoom = org.osmdroid.util.MapTileIndex.getZoom(pMapTileIndex)
+                    val x = org.osmdroid.util.MapTileIndex.getX(pMapTileIndex)
+                    val y = org.osmdroid.util.MapTileIndex.getY(pMapTileIndex)
+                    return baseUrl + "lang=zh_cn&size=1&scale=1&style=8&x=$x&y=$y&z=$zoom"
+                }
             }
 
-            MapProvider.BAIDU -> XYTileSource(
+            MapProvider.BAIDU -> object : XYTileSource(
                 "百度地图",
                 0, 19, 256, ".png",
                 arrayOf("https://online3.map.bdimg.com/tile/")
-            ) { zoom, x, y ->
-                // 百度地图需要特殊的坐标转换
-                val baiduY = (1 shl zoom) - 1 - y
-                "?qt=vtile&x=$x&y=$baiduY&z=$zoom&styles=pl&udt=20230712&scaler=1"
+            ) {
+                override fun getTileURLString(pMapTileIndex: Long): String {
+                    val zoom = org.osmdroid.util.MapTileIndex.getZoom(pMapTileIndex)
+                    val x = org.osmdroid.util.MapTileIndex.getX(pMapTileIndex)
+                    val y = org.osmdroid.util.MapTileIndex.getY(pMapTileIndex)
+                    // 百度地图需要特殊的坐标转换
+                    val baiduY = (1 shl zoom) - 1 - y
+                    return baseUrl + "?qt=vtile&x=$x&y=$baiduY&z=$zoom&styles=pl&udt=20230712&scaler=1"
+                }
             }
 
-            MapProvider.TENCENT -> XYTileSource(
+            MapProvider.TENCENT -> object : XYTileSource(
                 "腾讯地图",
                 0, 19, 256, ".png",
                 arrayOf(
@@ -135,10 +145,15 @@ private fun updateTileSource(mapView: MapView, mapProvider: MapProvider) {
                     "https://rt2.map.gtimg.com/tile?",
                     "https://rt3.map.gtimg.com/tile?"
                 )
-            ) { zoom, x, y ->
-                // 腾讯地图需要Y轴翻转
-                val tencentY = (1 shl zoom) - 1 - y
-                "z=$zoom&x=$x&y=$tencentY&styleid=1&version=277"
+            ) {
+                override fun getTileURLString(pMapTileIndex: Long): String {
+                    val zoom = org.osmdroid.util.MapTileIndex.getZoom(pMapTileIndex)
+                    val x = org.osmdroid.util.MapTileIndex.getX(pMapTileIndex)
+                    val y = org.osmdroid.util.MapTileIndex.getY(pMapTileIndex)
+                    // 腾讯地图需要Y轴翻转
+                    val tencentY = (1 shl zoom) - 1 - y
+                    return baseUrl + "z=$zoom&x=$x&y=$tencentY&styleid=1&version=277"
+                }
             }
         }
     )

@@ -29,7 +29,7 @@
     <string name="running_notification_title">正在记录跑步</string>
     <string name="running_notification_text">距离: %1$s km | 时长: %2$s</string>
     <string name="share_title">分享我的跑步</string>
-    <string name="share_text">来看看我的跑步路线！距离 %.2f 公里，用时 %s</string>
+    <string name="share_text">来看看我的跑步路线！距离 %1$.2f 公里，用时 %2$s</string>
     <string name="confirm_delete">确定删除这条记录吗？</string>
     <string name="cancel">取消</string>
     <string name="confirm">确定</string>
