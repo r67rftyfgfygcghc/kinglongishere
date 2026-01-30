@@ -29,10 +29,30 @@ android {
         manifestPlaceholders["AMAP_API_KEY"] = project.findProperty("AMAP_API_KEY") ?: ""
     }
 
+    // 签名配置
+    signingConfigs {
+        create("release") {
+            // 从环境变量读取（GitHub Actions CI/CD）
+            val keystoreFile = System.getenv("KEYSTORE_FILE")
+            if (keystoreFile != null && File(keystoreFile).exists()) {
+                storeFile = File(keystoreFile)
+                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
+                keyAlias = System.getenv("KEY_ALIAS") ?: ""
+                keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            // 使用release签名配置
+            signingConfig = if (System.getenv("KEYSTORE_FILE") != null) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug") // 本地开发时使用debug签名
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
