@@ -1,0 +1,29 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Running person icon -->
+    <group android:translateX="27" android:translateY="27">
+        <!-- Head -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M27,8a5,5 0,1 0,0 10a5,5 0,1 0,0 -10z"/>
+        <!-- Body and legs - running pose -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:strokeWidth="4"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M27,20 L27,35 M27,35 L18,50 M27,35 L36,50"/>
+        <!-- Arms -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:strokeWidth="4"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M27,25 L18,32 M27,25 L38,20"/>
+    </group>
+</vector>

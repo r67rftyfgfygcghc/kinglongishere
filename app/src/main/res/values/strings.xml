@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">跑步分享</string>
+    <string name="start_running">开始跑步</string>
+    <string name="stop_running">停止</string>
+    <string name="pause_running">暂停</string>
+    <string name="resume_running">继续</string>
+    <string name="share_location">分享位置</string>
+    <string name="history">历史记录</string>
+    <string name="settings">设置</string>
+    <string name="home">首页</string>
+    <string name="distance">距离</string>
+    <string name="duration">时长</string>
+    <string name="pace">配速</string>
+    <string name="km">公里</string>
+    <string name="min_km">分钟/公里</string>
+    <string name="no_history">暂无跑步记录</string>
+    <string name="delete_record">删除记录</string>
+    <string name="share_record">分享记录</string>
+    <string name="export_gpx">导出GPX</string>
+    <string name="map_provider">地图选择</string>
+    <string name="map_osm">OpenStreetMap</string>
+    <string name="map_amap">高德地图</string>
+    <string name="map_baidu">百度地图</string>
+    <string name="map_tencent">腾讯地图</string>
+    <string name="location_permission_required">需要位置权限才能追踪跑步</string>
+    <string name="notification_channel_name">跑步追踪</string>
+    <string name="notification_channel_description">显示跑步状态</string>
+    <string name="running_notification_title">正在记录跑步</string>
+    <string name="running_notification_text">距离: %1$s km | 时长: %2$s</string>
+    <string name="share_title">分享我的跑步</string>
+    <string name="share_text">来看看我的跑步路线！距离 %.2f 公里，用时 %s</string>
+    <string name="confirm_delete">确定删除这条记录吗？</string>
+    <string name="cancel">取消</string>
+    <string name="confirm">确定</string>
+    <string name="running_stats">跑步统计</string>
+    <string name="total_runs">总跑步次数</string>
+    <string name="total_distance">总距离</string>
+    <string name="total_duration">总时长</string>
+</resources>

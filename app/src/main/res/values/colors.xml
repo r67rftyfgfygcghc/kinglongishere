@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors - 运动活力橙 -->
+    <color name="primary">#FF6B35</color>
+    <color name="primary_variant">#E55A2B</color>
+    <color name="primary_light">#FF8F65</color>
+
+    <!-- Secondary Colors - 健康绿 -->
+    <color name="secondary">#4CAF50</color>
+    <color name="secondary_variant">#388E3C</color>
+
+    <!-- Background Colors -->
+    <color name="background">#FAFAFA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#F5F5F5</color>
+
+    <!-- Text Colors -->
+    <color name="on_primary">#FFFFFF</color>
+    <color name="on_secondary">#FFFFFF</color>
+    <color name="on_background">#1C1B1F</color>
+    <color name="on_surface">#1C1B1F</color>
+    <color name="text_secondary">#757575</color>
+
+    <!-- Status Colors -->
+    <color name="error">#F44336</color>
+    <color name="success">#4CAF50</color>
+    <color name="warning">#FF9800</color>
+
+    <!-- Map Colors -->
+    <color name="route_color">#FF6B35</color>
+    <color name="route_color_alpha">#80FF6B35</color>
+    <color name="marker_color">#4CAF50</color>
+</resources>
