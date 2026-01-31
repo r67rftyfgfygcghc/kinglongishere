@@ -20,9 +20,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.asPaddingValues
 import com.runshare.app.data.PreferencesRepository
 import com.runshare.app.data.RunDatabase
 import com.runshare.app.data.RunEntity
@@ -139,12 +144,14 @@ fun HomeScreen(
             showCurrentMarker = true
         )
 
-        // 顶部栏
+        // 顶部栏 - 添加状态栏间距
+        val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
-                .align(Alignment.TopCenter),
+                .padding(top = statusBarPadding.calculateTopPadding() + 8.dp)
+                .padding(horizontal = 16.dp)
+                .align(Alignment.TopStart),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             // 历史记录按钮
@@ -179,11 +186,13 @@ fun HomeScreen(
         }
 
         // 底部控制区
+        val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
-                .padding(16.dp),
+                .padding(bottom = navBarPadding.calculateBottomPadding() + 16.dp)
+                .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // 统计卡片（跑步中显示）
@@ -238,10 +247,15 @@ fun HomeScreen(
 
                     RunningState.RUNNING -> {
                         // 暂停按钮
-                        FilledTonalButton(
+                        Button(
                             onClick = { locationService?.pauseRunning() },
-                            modifier = Modifier.size(64.dp),
-                            shape = CircleShape
+                            modifier = Modifier
+                                .size(64.dp)
+                                .shadow(6.dp, CircleShape),
+                            shape = CircleShape,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF4CAF50) // 绿色
+                            )
                         ) {
                             Icon(Icons.Filled.Pause, contentDescription = "暂停")
                         }
@@ -252,10 +266,12 @@ fun HomeScreen(
                                 locationService?.stopRunning()
                                 saveRun()
                             },
-                            modifier = Modifier.size(64.dp),
+                            modifier = Modifier
+                                .size(64.dp)
+                                .shadow(6.dp, CircleShape),
                             shape = CircleShape,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error
+                                containerColor = Color(0xFFF44336) // 红色
                             )
                         ) {
                             Icon(Icons.Filled.Stop, contentDescription = "停止")
