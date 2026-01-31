@@ -6,7 +6,9 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import com.runshare.app.model.MapProvider
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.util.UUID
 
 /**
  * 用户偏好设置存储
@@ -20,6 +22,12 @@ class PreferencesRepository(private val context: Context) {
         private val SHARE_DURATION_KEY = intPreferencesKey("share_duration_minutes")
         private val KEEP_SCREEN_ON_KEY = booleanPreferencesKey("keep_screen_on")
         private val VOICE_PROMPT_KEY = booleanPreferencesKey("voice_prompt")
+        
+        // 新增：用户和共享设置
+        private val USERNAME_KEY = stringPreferencesKey("username")
+        private val USER_ID_KEY = stringPreferencesKey("user_id")
+        private val SERVER_URL_KEY = stringPreferencesKey("server_url")
+        private val SHARING_ENABLED_KEY = booleanPreferencesKey("sharing_enabled")
     }
 
     /**
@@ -86,4 +94,76 @@ class PreferencesRepository(private val context: Context) {
             preferences[VOICE_PROMPT_KEY] = enabled
         }
     }
+
+    // ========== 用户和共享设置 ==========
+
+    /**
+     * 获取用户名
+     */
+    val username: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[USERNAME_KEY] ?: "跑步者"
+    }
+
+    /**
+     * 设置用户名
+     */
+    suspend fun setUsername(name: String) {
+        context.dataStore.edit { preferences ->
+            preferences[USERNAME_KEY] = name
+        }
+    }
+
+    /**
+     * 获取用户唯一ID（自动生成）
+     */
+    val userId: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[USER_ID_KEY] ?: ""
+    }
+
+    /**
+     * 获取或生成用户ID
+     */
+    suspend fun getOrCreateUserId(): String {
+        val existing = context.dataStore.data.first()[USER_ID_KEY]
+        if (!existing.isNullOrEmpty()) return existing
+        
+        val newId = UUID.randomUUID().toString().replace("-", "").take(16)
+        context.dataStore.edit { preferences ->
+            preferences[USER_ID_KEY] = newId
+        }
+        return newId
+    }
+
+    /**
+     * 获取服务器地址
+     */
+    val serverUrl: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[SERVER_URL_KEY] ?: ""
+    }
+
+    /**
+     * 设置服务器地址
+     */
+    suspend fun setServerUrl(url: String) {
+        context.dataStore.edit { preferences ->
+            preferences[SERVER_URL_KEY] = url
+        }
+    }
+
+    /**
+     * 获取是否正在共享位置
+     */
+    val sharingEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[SHARING_ENABLED_KEY] ?: false
+    }
+
+    /**
+     * 设置位置共享开关
+     */
+    suspend fun setSharingEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[SHARING_ENABLED_KEY] = enabled
+        }
+    }
 }
+

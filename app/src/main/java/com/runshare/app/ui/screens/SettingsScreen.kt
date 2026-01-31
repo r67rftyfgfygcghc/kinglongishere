@@ -33,9 +33,15 @@ fun SettingsScreen(
     val keepScreenOn by prefsRepository.keepScreenOn.collectAsState(initial = true)
     val voicePrompt by prefsRepository.voicePromptEnabled.collectAsState(initial = false)
     val shareDuration by prefsRepository.shareDurationMinutes.collectAsState(initial = 30)
+    
+    // 新增：用户和服务器设置
+    val username by prefsRepository.username.collectAsState(initial = "跑步者")
+    val serverUrl by prefsRepository.serverUrl.collectAsState(initial = "")
 
     var showMapProviderDialog by remember { mutableStateOf(false) }
     var showShareDurationDialog by remember { mutableStateOf(false) }
+    var showUsernameDialog by remember { mutableStateOf(false) }
+    var showServerDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -97,6 +103,24 @@ fun SettingsScreen(
 
             // 分享设置
             SettingsSection(title = "分享设置") {
+                SettingsItem(
+                    icon = Icons.Filled.Person,
+                    title = "用户名",
+                    subtitle = username,
+                    onClick = { showUsernameDialog = true }
+                )
+                
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                
+                SettingsItem(
+                    icon = Icons.Filled.Cloud,
+                    title = "服务器地址",
+                    subtitle = if (serverUrl.isEmpty()) "未设置（离线模式）" else serverUrl,
+                    onClick = { showServerDialog = true }
+                )
+                
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                
                 SettingsItem(
                     icon = Icons.Filled.Timer,
                     title = "分享时长",
@@ -189,6 +213,85 @@ fun SettingsScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = { showShareDurationDialog = false }) {
+                        Text("取消")
+                    }
+                }
+            )
+        }
+
+        // 用户名编辑对话框
+        if (showUsernameDialog) {
+            var inputValue by remember { mutableStateOf(username) }
+            AlertDialog(
+                onDismissRequest = { showUsernameDialog = false },
+                title = { Text("设置用户名") },
+                text = {
+                    OutlinedTextField(
+                        value = inputValue,
+                        onValueChange = { inputValue = it },
+                        label = { Text("用户名") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                prefsRepository.setUsername(inputValue)
+                                showUsernameDialog = false
+                            }
+                        }
+                    ) {
+                        Text("保存")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showUsernameDialog = false }) {
+                        Text("取消")
+                    }
+                }
+            )
+        }
+
+        // 服务器地址编辑对话框
+        if (showServerDialog) {
+            var inputValue by remember { mutableStateOf(serverUrl) }
+            AlertDialog(
+                onDismissRequest = { showServerDialog = false },
+                title = { Text("设置服务器地址") },
+                text = {
+                    Column {
+                        Text(
+                            text = "输入你的服务器WebSocket地址，留空则使用离线模式",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = inputValue,
+                            onValueChange = { inputValue = it },
+                            label = { Text("服务器地址") },
+                            placeholder = { Text("例如: http://192.168.1.100:8080") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                prefsRepository.setServerUrl(inputValue)
+                                showServerDialog = false
+                            }
+                        }
+                    ) {
+                        Text("保存")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showServerDialog = false }) {
                         Text("取消")
                     }
                 }

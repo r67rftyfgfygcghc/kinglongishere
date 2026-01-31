@@ -132,6 +132,9 @@ dependencies {
     // QR Code Generation
     implementation("com.google.zxing:core:3.5.2")
 
+    // OkHttp for WebSocket
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
