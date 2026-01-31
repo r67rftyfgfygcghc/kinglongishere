@@ -46,7 +46,10 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(
     onNavigateToHistory: () -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
+    onNavigateToLeaderboard: () -> Unit = {},
+    onNavigateToCheckIn: () -> Unit = {},
+    onNavigateToGroup: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -225,8 +228,10 @@ fun HomeScreen(
         RightToolbar(
             onSearchClick = { /* TODO */ },
             onLayersClick = { showLayersDialog = true },
-            onTeamClick = onNavigateToHistory,
-            onToolsClick = { /* TODO */ },
+            onTeamClick = onNavigateToGroup,
+            onToolsClick = onNavigateToHistory,
+            onLeaderboardClick = onNavigateToLeaderboard,
+            onCheckInClick = onNavigateToCheckIn,
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(end = 8.dp)

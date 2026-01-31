@@ -28,6 +28,7 @@ class PreferencesRepository(private val context: Context) {
         private val USER_ID_KEY = stringPreferencesKey("user_id")
         private val SERVER_URL_KEY = stringPreferencesKey("server_url")
         private val SHARING_ENABLED_KEY = booleanPreferencesKey("sharing_enabled")
+        private val LOGGED_IN_KEY = booleanPreferencesKey("logged_in")
     }
 
     /**
@@ -163,6 +164,22 @@ class PreferencesRepository(private val context: Context) {
     suspend fun setSharingEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[SHARING_ENABLED_KEY] = enabled
+        }
+    }
+
+    /**
+     * 获取是否已登录
+     */
+    val isLoggedIn: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[LOGGED_IN_KEY] ?: false
+    }
+
+    /**
+     * 设置登录状态
+     */
+    suspend fun setLoggedIn(loggedIn: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[LOGGED_IN_KEY] = loggedIn
         }
     }
 }

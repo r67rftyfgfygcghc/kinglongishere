@@ -27,6 +27,8 @@ fun RightToolbar(
     onLayersClick: () -> Unit = {},
     onTeamClick: () -> Unit = {},
     onToolsClick: () -> Unit = {},
+    onLeaderboardClick: () -> Unit = {},
+    onCheckInClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -38,10 +40,18 @@ fun RightToolbar(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
+        // 打卡按钮
         ToolbarButton(
-            icon = Icons.Filled.Search,
-            label = "搜索",
-            onClick = onSearchClick
+            icon = Icons.Filled.CheckCircle,
+            label = "打卡",
+            onClick = onCheckInClick
+        )
+        
+        // 排行榜
+        ToolbarButton(
+            icon = Icons.Filled.Leaderboard,
+            label = "排行",
+            onClick = onLeaderboardClick
         )
         
         HorizontalDivider(
@@ -52,26 +62,14 @@ fun RightToolbar(
         )
         
         ToolbarButton(
-            icon = Icons.Filled.Build,
-            label = "工具",
-            onClick = onToolsClick
-        )
-        
-        ToolbarButton(
             icon = Icons.Filled.Layers,
             label = "图层",
             onClick = onLayersClick
         )
         
         ToolbarButton(
-            icon = Icons.Filled.FilterList,
-            label = "叠加",
-            onClick = {}
-        )
-        
-        ToolbarButton(
             icon = Icons.Filled.Group,
-            label = "队伍",
+            label = "小组",
             onClick = onTeamClick
         )
         
@@ -82,16 +80,10 @@ fun RightToolbar(
             color = Color(0xFFEEEEEE)
         )
         
-        // 比例尺显示
-        Text(
-            text = "⊥",
-            color = Color(0xFF666666),
-            fontSize = 12.sp
-        )
-        Text(
-            text = "13.6",
-            color = Color(0xFF333333),
-            fontSize = 10.sp
+        ToolbarButton(
+            icon = Icons.Filled.History,
+            label = "历史",
+            onClick = onToolsClick
         )
     }
 }
