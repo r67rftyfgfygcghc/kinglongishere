@@ -23,12 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.asPaddingValues
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
@@ -40,14 +35,12 @@ import com.runshare.app.model.MapProvider
 import com.runshare.app.model.RunningState
 import com.runshare.app.service.LocationService
 import com.runshare.app.service.LocationSharingManager
-import com.runshare.app.ui.components.MapViewComposable
-import com.runshare.app.ui.components.RunStatsCard
+import com.runshare.app.ui.components.*
 import com.runshare.app.utils.LocationUtils
-import com.runshare.app.utils.ShareUtils
 import kotlinx.coroutines.launch
 
 /**
- * 首页/跑步主界面
+ * 首页/跑步主界面 - 参考导航App设计
  */
 @SuppressLint("MissingPermission")
 @Composable
@@ -70,11 +63,11 @@ fun HomeScreen(
     val sharingManager = remember { LocationSharingManager(context) }
     val isConnected by sharingManager.isConnected.collectAsState()
     val isSharing by sharingManager.isSharing.collectAsState()
-    val friendLocations by sharingManager.friendLocations.collectAsState()
 
-    // 空闲时的当前位置（非跑步时）
+    // 空闲时的当前位置
     var idleLocation by remember { mutableStateOf<LocationPoint?>(null) }
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    var isLocating by remember { mutableStateOf(true) }
 
     // 服务绑定
     var locationService by remember { mutableStateOf<LocationService?>(null) }
@@ -115,7 +108,7 @@ fun HomeScreen(
     val distanceMeters by locationService?.distanceMeters?.collectAsState() ?: remember { mutableStateOf(0.0) }
     val durationMs by locationService?.durationMs?.collectAsState() ?: remember { mutableStateOf(0L) }
 
-    // 合并位置：跑步时用服务位置，空闲时用单次获取的位置
+    // 合并位置
     val displayLocation = currentLocation ?: idleLocation
 
     // 权限请求
@@ -125,9 +118,9 @@ fun HomeScreen(
     ) { permissions ->
         hasLocationPermission = permissions.values.all { it }
         if (hasLocationPermission) {
-            // 权限获取后立即获取当前位置
             getIdleLocation(fusedLocationClient) { point ->
                 idleLocation = point
+                isLocating = false
             }
         }
     }
@@ -144,11 +137,10 @@ fun HomeScreen(
     // 空闲时定期获取位置
     LaunchedEffect(hasLocationPermission, runningState) {
         if (hasLocationPermission && runningState == RunningState.IDLE) {
-            // 每10秒更新一次空闲位置
             while (true) {
                 getIdleLocation(fusedLocationClient) { point ->
                     idleLocation = point
-                    // 如果正在共享，上传位置
+                    isLocating = false
                     if (isSharing && point != null) {
                         sharingManager.updateLocation(point, isRunning = false)
                     }
@@ -162,7 +154,6 @@ fun HomeScreen(
     LaunchedEffect(serverUrl, username) {
         val userId = prefsRepository.getOrCreateUserId()
         sharingManager.configure(serverUrl, userId, username)
-        
         if (isSharingEnabled && serverUrl.isNotEmpty()) {
             sharingManager.startSharing()
         }
@@ -182,6 +173,7 @@ fun HomeScreen(
 
     // 分享弹窗状态
     var showShareDialog by remember { mutableStateOf(false) }
+    var showLayersDialog by remember { mutableStateOf(false) }
 
     // 计算配速
     val pace = remember(distanceMeters, durationMs) {
@@ -191,7 +183,7 @@ fun HomeScreen(
     // 保存跑步记录
     fun saveRun() {
         scope.launch {
-            if (routePoints.isNotEmpty() && distanceMeters > 10) { // 至少10米才保存
+            if (routePoints.isNotEmpty() && distanceMeters > 10) {
                 val run = RunEntity(
                     startTime = routePoints.first().timestamp,
                     endTime = routePoints.last().timestamp,
@@ -206,6 +198,9 @@ fun HomeScreen(
         }
     }
 
+    // 地图居中回调
+    var mapCenterCallback by remember { mutableStateOf<(() -> Unit)?>(null) }
+
     Box(modifier = Modifier.fillMaxSize()) {
         // 地图层
         MapViewComposable(
@@ -213,217 +208,80 @@ fun HomeScreen(
             mapProvider = mapProvider,
             currentLocation = displayLocation,
             routePoints = routePoints,
-            showCurrentMarker = true
+            showCurrentMarker = true,
+            onMapReady = { centerCallback ->
+                mapCenterCallback = centerCallback
+            }
         )
 
-        // 顶部栏 - 添加状态栏间距
-        val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = statusBarPadding.calculateTopPadding() + 8.dp)
-                .padding(horizontal = 16.dp)
-                .align(Alignment.TopStart),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            // 历史记录按钮
-            IconButton(
-                onClick = onNavigateToHistory,
-                modifier = Modifier
-                    .shadow(4.dp, CircleShape)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surface)
-            ) {
-                Icon(
-                    Icons.Filled.History,
-                    contentDescription = "历史记录",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
+        // 顶部GPS信息栏
+        TopInfoBar(
+            currentLocation = displayLocation,
+            isLocating = isLocating,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
 
-            // 共享状态指示器
-            if (isSharing) {
-                Row(
-                    modifier = Modifier
-                        .shadow(4.dp, RoundedCornerShape(16.dp))
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(if (isConnected) Color(0xFF4CAF50) else Color(0xFFFF9800))
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        if (isConnected) Icons.Filled.Wifi else Icons.Filled.WifiOff,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = if (isConnected) "共享中" else "离线",
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
-            }
-
-            // 设置按钮
-            IconButton(
-                onClick = onNavigateToSettings,
-                modifier = Modifier
-                    .shadow(4.dp, CircleShape)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surface)
-            ) {
-                Icon(
-                    Icons.Filled.Settings,
-                    contentDescription = "设置",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-
-        // 分享位置按钮（右下角）
-        FloatingActionButton(
-            onClick = { showShareDialog = true },
+        // 右侧垂直工具栏
+        RightToolbar(
+            onSearchClick = { /* TODO */ },
+            onLayersClick = { showLayersDialog = true },
+            onTeamClick = onNavigateToHistory,
+            onToolsClick = { /* TODO */ },
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .padding(end = 16.dp),
-            containerColor = MaterialTheme.colorScheme.secondary
-        ) {
-            Icon(Icons.Filled.Share, contentDescription = "分享位置")
-        }
+                .padding(end = 8.dp)
+        )
 
-        // 底部控制区
-        val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
-        Column(
+        // 左侧浮动按钮
+        LeftFloatingButtons(
+            onCenterClick = {
+                mapCenterCallback?.invoke()
+            },
+            onOrientationClick = { /* TODO */ },
+            onModeClick = { /* TODO */ },
             modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .padding(bottom = navBarPadding.calculateBottomPadding() + 16.dp)
-                .padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // 统计卡片（跑步中显示）
-            if (runningState != RunningState.IDLE) {
-                RunStatsCard(
-                    distance = String.format("%.2f", distanceMeters / 1000.0),
-                    duration = LocationUtils.formatDuration(durationMs),
-                    pace = LocationUtils.formatPace(pace),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .shadow(8.dp, RoundedCornerShape(16.dp))
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+                .align(Alignment.CenterStart)
+                .padding(start = 8.dp)
+        )
 
-            // 控制按钮
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                when (runningState) {
-                    RunningState.IDLE -> {
-                        // 开始跑步按钮
-                        Button(
-                            onClick = {
-                                if (hasLocationPermission) {
-                                    LocationService.startService(context)
-                                } else {
-                                    permissionLauncher.launch(
-                                        arrayOf(
-                                            Manifest.permission.ACCESS_FINE_LOCATION,
-                                            Manifest.permission.ACCESS_COARSE_LOCATION
-                                        )
-                                    )
-                                }
-                            },
-                            modifier = Modifier
-                                .size(80.dp)
-                                .shadow(8.dp, CircleShape),
-                            shape = CircleShape,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Icon(
-                                Icons.Filled.PlayArrow,
-                                contentDescription = "开始",
-                                modifier = Modifier.size(36.dp)
-                            )
-                        }
-                    }
-
-                    RunningState.RUNNING -> {
-                        // 暂停按钮
-                        Button(
-                            onClick = { locationService?.pauseRunning() },
-                            modifier = Modifier
-                                .size(64.dp)
-                                .shadow(6.dp, CircleShape),
-                            shape = CircleShape,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF4CAF50) // 绿色
-                            )
-                        ) {
-                            Icon(Icons.Filled.Pause, contentDescription = "暂停")
-                        }
-
-                        // 停止按钮
-                        Button(
-                            onClick = {
-                                locationService?.stopRunning()
-                                saveRun()
-                            },
-                            modifier = Modifier
-                                .size(64.dp)
-                                .shadow(6.dp, CircleShape),
-                            shape = CircleShape,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFF44336) // 红色
-                            )
-                        ) {
-                            Icon(Icons.Filled.Stop, contentDescription = "停止")
-                        }
-                    }
-
-                    RunningState.PAUSED -> {
-                        // 继续按钮
-                        Button(
-                            onClick = { locationService?.resumeRunning() },
-                            modifier = Modifier.size(64.dp),
-                            shape = CircleShape
-                        ) {
-                            Icon(Icons.Filled.PlayArrow, contentDescription = "继续")
-                        }
-
-                        // 停止按钮
-                        Button(
-                            onClick = {
-                                locationService?.stopRunning()
-                                saveRun()
-                            },
-                            modifier = Modifier.size(64.dp),
-                            shape = CircleShape,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error
-                            )
-                        ) {
-                            Icon(Icons.Filled.Stop, contentDescription = "停止")
-                        }
-                    }
-
-                    RunningState.STOPPED -> {
-                        // 自动重置
-                        LaunchedEffect(Unit) {
-                            locationService?.resetState()
-                        }
-                    }
+        // 底部控制面板
+        BottomControlPanel(
+            runningState = runningState,
+            distanceKm = distanceMeters / 1000.0,
+            durationFormatted = LocationUtils.formatDuration(durationMs),
+            paceFormatted = LocationUtils.formatPace(pace),
+            onSettingsClick = onNavigateToSettings,
+            onStartClick = {
+                if (hasLocationPermission) {
+                    LocationService.startService(context)
+                } else {
+                    permissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
                 }
+            },
+            onPauseClick = { locationService?.pauseRunning() },
+            onResumeClick = { locationService?.resumeRunning() },
+            onStopClick = {
+                locationService?.stopRunning()
+                saveRun()
+            },
+            onShareClick = { showShareDialog = true },
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+
+        // 自动重置状态
+        if (runningState == RunningState.STOPPED) {
+            LaunchedEffect(Unit) {
+                locationService?.resetState()
             }
         }
     }
 
-    // 分享位置弹窗
+    // 分享弹窗
     if (showShareDialog) {
         ShareLocationDialog(
             onDismiss = { showShareDialog = false },
@@ -440,6 +298,20 @@ fun HomeScreen(
                     }
                 }
             }
+        )
+    }
+
+    // 图层选择弹窗
+    if (showLayersDialog) {
+        MapLayersDialog(
+            currentProvider = mapProvider,
+            onProviderSelected = { provider ->
+                scope.launch {
+                    prefsRepository.setMapProvider(provider)
+                }
+                showLayersDialog = false
+            },
+            onDismiss = { showLayersDialog = false }
         )
     }
 }
@@ -492,7 +364,6 @@ fun ShareLocationDialog(
         title = { Text("分享我的位置") },
         text = {
             Column {
-                // 共享开关
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -514,7 +385,6 @@ fun ShareLocationDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 分享链接
                 OutlinedTextField(
                     value = shareLink,
                     onValueChange = {},
@@ -526,7 +396,6 @@ fun ShareLocationDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 分享按钮
                 Button(
                     onClick = {
                         val intent = Intent(Intent.ACTION_SEND).apply {
@@ -546,6 +415,52 @@ fun ShareLocationDialog(
         confirmButton = {
             TextButton(onClick = onDismiss) {
                 Text("关闭")
+            }
+        }
+    )
+}
+
+/**
+ * 地图图层选择弹窗
+ */
+@Composable
+fun MapLayersDialog(
+    currentProvider: MapProvider,
+    onProviderSelected: (MapProvider) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("选择地图图层") },
+        text = {
+            Column {
+                MapProvider.entries.forEach { provider ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                if (provider == currentProvider)
+                                    MaterialTheme.colorScheme.primaryContainer
+                                else
+                                    Color.Transparent
+                            )
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = provider == currentProvider,
+                            onClick = { onProviderSelected(provider) }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(provider.displayName)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
             }
         }
     )

@@ -28,15 +28,24 @@ fun MapViewComposable(
     routePoints: List<LocationPoint> = emptyList(),
     showCurrentMarker: Boolean = true,
     enableTouch: Boolean = true,
-    onMapReady: (MapView) -> Unit = {}
+    onMapReady: (centerCallback: () -> Unit) -> Unit = {}
 ) {
     val context = LocalContext.current
+    var mapViewRef by remember { mutableStateOf<MapView?>(null) }
 
     AndroidView(
         modifier = modifier.fillMaxSize(),
         factory = { ctx ->
             createMapView(ctx, mapProvider).also { mapView ->
-                onMapReady(mapView)
+                mapViewRef = mapView
+                // 提供居中回调函数
+                onMapReady {
+                    mapViewRef?.let { mv ->
+                        currentLocation?.let { loc ->
+                            mv.controller.animateTo(GeoPoint(loc.latitude, loc.longitude))
+                        }
+                    }
+                }
             }
         },
         update = { mapView ->
@@ -46,14 +55,26 @@ fun MapViewComposable(
             // 清除旧的覆盖物（保留缩放控件等）
             mapView.overlays.removeAll { it is Marker || it is Polyline }
 
-            // 绘制轨迹
+            // 绘制轨迹（紫色/粉色如参考设计）
             if (routePoints.isNotEmpty()) {
                 val polyline = Polyline().apply {
-                    outlinePaint.color = Color.parseColor("#FF6B35")
-                    outlinePaint.strokeWidth = 12f
+                    outlinePaint.color = Color.parseColor("#E040FB") // 紫色
+                    outlinePaint.strokeWidth = 10f
+                    outlinePaint.isAntiAlias = true
                     setPoints(routePoints.map { GeoPoint(it.latitude, it.longitude) })
                 }
                 mapView.overlays.add(polyline)
+                
+                // 添加起点标记
+                if (routePoints.size > 1) {
+                    val startMarker = Marker(mapView).apply {
+                        position = GeoPoint(routePoints.first().latitude, routePoints.first().longitude)
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                        title = "起点"
+                        icon = context.getDrawable(android.R.drawable.presence_online)
+                    }
+                    mapView.overlays.add(startMarker)
+                }
             }
 
             // 添加当前位置标记
