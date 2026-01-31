@@ -46,20 +46,34 @@ jobs:
     - name: Build Debug APK
       run: ./gradlew assembleDebug
 
-    - name: Decode Keystore
-      if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+    - name: Check if Release Signing is configured
+      id: check_signing
+      run: |
+        if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+          echo "has_signing=true" >> $GITHUB_OUTPUT
+        else
+          echo "has_signing=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Decode Keystore (if configured)
+      if: steps.check_signing.outputs.has_signing == 'true'
       run: |
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/release-keystore.jks
       env:
         KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
     - name: Build Signed Release APK
+      if: steps.check_signing.outputs.has_signing == 'true'
       run: ./gradlew assembleRelease
       env:
         KEYSTORE_FILE: ${{ github.workspace }}/release-keystore.jks
         KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+    - name: Build Release APK with Debug Signing (fallback)
+      if: steps.check_signing.outputs.has_signing != 'true'
+      run: ./gradlew assembleRelease
 
     - name: Upload Debug APK
       uses: actions/upload-artifact@v4
