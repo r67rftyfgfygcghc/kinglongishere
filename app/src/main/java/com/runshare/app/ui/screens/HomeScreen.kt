@@ -461,7 +461,7 @@ private fun getIdleLocation(
                         latitude = location.latitude,
                         longitude = location.longitude,
                         altitude = location.altitude,
-                        speed = location.speed.toDouble(),
+                        speed = location.speed,
                         timestamp = System.currentTimeMillis()
                     )
                 )
