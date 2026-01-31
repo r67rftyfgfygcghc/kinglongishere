@@ -35,7 +35,7 @@ class PreferencesRepository(private val context: Context) {
      * 获取地图提供商
      */
     val mapProvider: Flow<MapProvider> = context.dataStore.data.map { preferences ->
-        val name = preferences[MAP_PROVIDER_KEY] ?: MapProvider.OSM.name
+        val name = preferences[MAP_PROVIDER_KEY] ?: MapProvider.AMAP.name
         MapProvider.fromName(name)
     }
 

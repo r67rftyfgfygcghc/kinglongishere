@@ -23,7 +23,7 @@ import org.osmdroid.views.overlay.Polyline
 @Composable
 fun MapViewComposable(
     modifier: Modifier = Modifier,
-    mapProvider: MapProvider = MapProvider.OSM,
+    mapProvider: MapProvider = MapProvider.AMAP,
     currentLocation: LocationPoint? = null,
     routePoints: List<LocationPoint> = emptyList(),
     showCurrentMarker: Boolean = true,
@@ -32,23 +32,40 @@ fun MapViewComposable(
 ) {
     val context = LocalContext.current
     var mapViewRef by remember { mutableStateOf<MapView?>(null) }
+    
+    // 保存最新的位置引用，用于居中回调
+    val currentLocationState = rememberUpdatedState(currentLocation)
+    var hasCalledMapReady by remember { mutableStateOf(false) }
 
     AndroidView(
         modifier = modifier.fillMaxSize(),
         factory = { ctx ->
             createMapView(ctx, mapProvider).also { mapView ->
                 mapViewRef = mapView
-                // 提供居中回调函数
-                onMapReady {
-                    mapViewRef?.let { mv ->
-                        currentLocation?.let { loc ->
-                            mv.controller.animateTo(GeoPoint(loc.latitude, loc.longitude))
-                        }
-                    }
-                }
             }
         },
         update = { mapView ->
+            mapViewRef = mapView
+            
+            // 只在第一次有效位置时调用onMapReady
+            if (!hasCalledMapReady && currentLocationState.value != null) {
+                hasCalledMapReady = true
+                // 提供居中回调函数 - 使用currentLocationState保证获取最新位置
+                onMapReady {
+                    mapViewRef?.let { mv ->
+                        currentLocationState.value?.let { loc ->
+                            mv.controller.animateTo(GeoPoint(loc.latitude, loc.longitude))
+                            mv.controller.setZoom(17.0)
+                        }
+                    }
+                }
+                // 首次定位时自动居中
+                currentLocationState.value?.let { loc ->
+                    mapView.controller.animateTo(GeoPoint(loc.latitude, loc.longitude))
+                    mapView.controller.setZoom(17.0)
+                }
+            }
+            
             // 更新地图源
             updateTileSource(mapView, mapProvider)
 
@@ -77,7 +94,7 @@ fun MapViewComposable(
                 }
             }
 
-            // 添加当前位置标记
+            // 添加当前位置标记（不再自动居中，只添加标记）
             if (showCurrentMarker && currentLocation != null) {
                 val marker = Marker(mapView).apply {
                     position = GeoPoint(currentLocation.latitude, currentLocation.longitude)
@@ -85,11 +102,6 @@ fun MapViewComposable(
                     title = "当前位置"
                 }
                 mapView.overlays.add(marker)
-
-                // 移动到当前位置
-                mapView.controller.animateTo(
-                    GeoPoint(currentLocation.latitude, currentLocation.longitude)
-                )
             }
 
             // 控制触摸事件

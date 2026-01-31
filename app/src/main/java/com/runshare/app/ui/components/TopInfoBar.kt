@@ -27,6 +27,7 @@ fun TopInfoBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .statusBarsPadding()  // 添加状态栏padding
             .clip(RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp))
             .background(Color(0xCC000000))
             .padding(horizontal = 12.dp, vertical = 8.dp),
